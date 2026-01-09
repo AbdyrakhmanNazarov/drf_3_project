@@ -1,0 +1,50 @@
+services:
+  web3:
+    build: .
+    container_name: myshop_web3
+    command: gunicorn myshop.wsgi:application --bind 0.0.0.0:8003
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    ports:
+      - "8003:8003"
+    depends_on:
+      - db3
+      - redis3
+
+  celery3:
+    build: .
+    container_name: myshop_celery3
+    command: celery -A myshop worker -l info
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    depends_on:
+      - db3
+      - redis3
+
+  db3:
+    image: postgres:16
+    container_name: postgres_db
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+
+  redis3:
+    image: redis:7
+    container_name: redis3
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis_data:/data
+
+volumes:
+  postgres_data:
+  redis_data:

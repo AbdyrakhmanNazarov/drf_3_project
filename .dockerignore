@@ -1,0 +1,39 @@
+# Python кеши
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Виртуальное окружение
+venv/
+env/
+.venv/
+
+# Файлы базы данных
+*.sqlite3
+
+# Секреты и переменные окружения
+.env
+.env.*
+
+# Логи
+*.log
+logs/
+*.pot
+
+# Git
+.git/
+.gitignore
+
+# Docker
+Dockerfile*
+docker-compose.override.yml
+
+# Сборки и временные файлы
+*.swp
+*.swo
+*.DS_Store
+*.egg-info/
+dist/
+build/
+tmp/
