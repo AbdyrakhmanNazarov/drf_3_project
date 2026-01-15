@@ -1,22 +1,21 @@
 from pathlib import Path
 import environ
+from celery.schedules import crontab
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# Настройка env
 env = environ.Env(
     DEBUG=(bool, False)
 )
-
 environ.Env.read_env(BASE_DIR / '.env')
 
+# Основные настройки
 SECRET_KEY = env('SECRET_KEY')
 DEBUG = env('DEBUG')
+ALLOWED_HOSTS = env.list('DJANGO_ALLOWED_HOSTS', default=['127.0.0.1', 'localhost'])
 
-ALLOWED_HOSTS = env.list(
-    'DJANGO_ALLOWED_HOSTS',
-    default=['127.0.0.1', 'localhost']
-)
-
+# Приложения
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -31,8 +30,21 @@ INSTALLED_APPS = [
 
     'accounts',
     'product',
+    'django_celery_beat',  # обязательно для beat
 ]
 
+# Middleware
+MIDDLEWARE = [
+    'django.middleware.security.SecurityMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.common.CommonMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware',
+    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+]
+
+# URLs и шаблоны
 ROOT_URLCONF = 'myshop.urls'
 
 TEMPLATES = [
@@ -51,18 +63,10 @@ TEMPLATES = [
     },
 ]
 
-MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
-]
-
+# Модель пользователя
 AUTH_USER_MODEL = 'accounts.User'
 
+# База данных
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
@@ -74,28 +78,35 @@ DATABASES = {
     }
 }
 
+# Язык и часовой пояс
 LANGUAGE_CODE = 'ru'
 TIME_ZONE = 'Asia/Bishkek'
 USE_I18N = True
 USE_TZ = True
 
+# REST framework
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
 }
 
+# Celery настройки
 CELERY_BROKER_URL = f"redis://{env('REDIS_HOST')}:{env('REDIS_PORT')}/0"
 CELERY_RESULT_BACKEND = f"redis://{env('REDIS_HOST')}:{env('REDIS_PORT')}/0"
 
-# Путь к статическим файлам
+# Celery Beat - периодическая задача
+CELERY_BEAT_SCHEDULE = {
+    'delete-expired-otps-every-5-min': {
+        'task': 'accounts.tasks.delete_expired_otps',
+        'schedule': 300.0,  # каждые 5 минут
+    },
+}
+
+# Статика и медиа
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-
-# Для Swagger и других статик-пакетов
-STATICFILES_DIRS = [
-    BASE_DIR / 'static',  # можно создать пустую папку static
-]
+STATICFILES_DIRS = [BASE_DIR / 'static']
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'

@@ -1,50 +1,82 @@
+version: '3.8'
+
 services:
-  web3:
-    build: .
-    container_name: myshop_web3
-    command: gunicorn myshop.wsgi:application --bind 0.0.0.0:8003
-    volumes:
-      - .:/app
-    env_file:
-      - .env
-    ports:
-      - "8003:8003"
-    depends_on:
-      - db3
-      - redis3
-
-  celery3:
-    build: .
-    container_name: myshop_celery3
-    command: celery -A myshop worker -l info
-    volumes:
-      - .:/app
-    env_file:
-      - .env
-    depends_on:
-      - db3
-      - redis3
-
   db3:
     image: postgres:16
-    container_name: postgres_db
+    env_file:
+      - .env
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-    ports:
-      - "5433:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data/
+      - pgdata:/var/lib/postgresql/data
+    restart: always
+    networks:
+      - app
 
-  redis3:
-    image: redis:7
-    container_name: redis3
+  redis:
+    image: redis:7-alpine
+    restart: always
+    networks:
+      - app
+
+  adminer:
+    image: adminer
+    restart: always
+    depends_on:
+      - db3
     ports:
-      - "6380:6379"
+      - "${ADMINER_PORT}:8083"
+    networks:
+      - app
+
+  web3:
+    build: .
+    command: python manage.py runserver 0.0.0.0:8003
+    env_file:
+      - .env
     volumes:
-      - redis_data:/data
+      - .:/app
+    ports:
+      - "${PORT}:8003"
+    depends_on:
+      - db3
+      - redis
+    restart: always
+    networks:
+      - app
+
+  celery_worker:
+    build: .
+    command: celery -A myshop worker -l info
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+    depends_on:
+      - redis
+      - db3
+    restart: always
+    networks:
+      - app
+
+  celery_beat:
+    build: .
+    command: celery -A myshop beat -l info
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+    depends_on:
+      - redis
+      - db3
+    restart: always
+    networks:
+      - app
+
+networks:
+  app:
 
 volumes:
-  postgres_data:
-  redis_data:
+  pgdata:
