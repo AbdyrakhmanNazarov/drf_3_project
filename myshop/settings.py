@@ -1,6 +1,8 @@
 from pathlib import Path
 import environ
+from decouple import config
 from celery.schedules import crontab
+import json
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -13,7 +15,7 @@ environ.Env.read_env(BASE_DIR / '.env')
 # Основные настройки
 SECRET_KEY = env('SECRET_KEY')
 DEBUG = env('DEBUG')
-ALLOWED_HOSTS = env.list('DJANGO_ALLOWED_HOSTS', default=['127.0.0.1', 'localhost'])
+ALLOWED_HOSTS = ["*"]
 
 # Приложения
 INSTALLED_APPS = [
@@ -23,6 +25,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'corsheaders',
 
     'rest_framework',
     'drf_yasg',
@@ -37,6 +40,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -65,6 +69,10 @@ TEMPLATES = [
 
 # Модель пользователя
 AUTH_USER_MODEL = 'accounts.User'
+
+CORS_ALLOWED_ORIGINS = json.loads(config("CORS_ALLOWED_ORIGINS"))
+CORS_ALLOWED_CREDENTIALS = True
+CSRF_TRUSTED_ORIGINS = CORS_ALLOWED_ORIGINS
 
 # База данных
 DATABASES = {
@@ -106,7 +114,7 @@ CELERY_BEAT_SCHEDULE = {
 # Статика и медиа
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-STATICFILES_DIRS = [BASE_DIR / 'static']
+# STATICFILES_DIRS = [BASE_DIR / 'static']
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
